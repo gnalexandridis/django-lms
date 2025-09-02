@@ -17,8 +17,13 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
+from .views import home, student_home, teacher_home
 
 urlpatterns = [
+    path("oidc/", include("mozilla_django_oidc.urls")),
     path("admin/", admin.site.urls),
     path("users/", include(("lms_users.urls", "lms_users"), namespace="lms_users")),
+    path("teacher/", teacher_home, name="teacher_home"),
+    path("student/", student_home, name="student_home"),
+    path("", home, name="home"),
 ]

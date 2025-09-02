@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="el">
+  <head>
+    <meta charset="utf-8" />
+    <title>{% block title %}LMS{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 text-gray-900">
+    <header class="bg-white border-b">
+      <nav class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
+        <div class="flex items-center gap-6">
+          {% if user.is_authenticated and user.role == 'STUDENT' %}
+            <a href="{% url 'student_home' %}" class="text-lg font-semibold text-indigo-600">LMS</a>
+            <a href="{% url 'student_home' %}" class="text-sm hover:text-indigo-600">Αρχική</a>
+          {% elif user.is_authenticated and user.role == 'TEACHER' %}
+            <a href="{% url 'teacher_home' %}" class="text-lg font-semibold text-indigo-600">LMS</a>
+            <a href="{% url 'teacher_home' %}" class="text-sm hover:text-indigo-600">Αρχική</a>
+          {% else %}
+            <a href="/" class="text-sm hover:text-indigo-600">Αρχική</a>
+          {% endif %}
+        </div>
+    <div class="text-sm">
+          {% if user.is_authenticated %}
+            <span class="text-gray-600">Σύνδεση ως <span class="font-medium">{{ user.username }}</span> ({{ user.role }})</span>
+            <form action="{% url 'lms_users:logout' %}" method="post">
+              {% csrf_token %}
+              <button type="submit" class="text-sm text-red-600 hover:underline" data-testid="logout-btn">Αποσύνδεση</button>
+            </form>
+          {% else %}
+            <a href="{{ LOGIN_LINK }}">Σύνδεση</a>
+          {% endif %}
+        </div>
+      </nav>
+    </header>
+    <main class="max-w-5xl mx-auto px-4 py-6">{% block content %}{% endblock %}</main>
+  </body>
+</html>
