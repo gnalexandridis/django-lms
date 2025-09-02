@@ -1,0 +1,17 @@
+[run]
+omit =
+    e2e/*
+    manage.py
+    */tests/*
+    *test_*.py
+    */migrations/*
+    */migrations/*.py
+
+[report]
+omit =
+    e2e/*
+    manage.py
+    */tests/*
+    *test_*.py
+    */migrations/*
+    */migrations/*.py
