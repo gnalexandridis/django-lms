@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # project apps
     "lms",
     "lms_users",
+    "lms_courses",
 ]
 
 MIDDLEWARE = [
@@ -119,8 +120,8 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+# STATIC_URL = "static/"
+# STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "lms_users.User"
