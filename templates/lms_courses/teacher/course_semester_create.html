@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="text-2xl font-semibold mb-6">Δημιουργία Εξαμήνου Μαθήματος</h1>
+  <form method="post" data-testid="course-semester-form" class="bg-white shadow-sm border rounded p-6 space-y-4">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="text-red-600 text-sm">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="grid gap-1">
+      <label class="text-sm text-gray-700">Μάθημα</label>
+      <div class="flex items-start gap-3">
+        {{ form.course }}
+        {% if form.course.errors %}
+          <div class="text-red-600 text-sm">{{ form.course.errors }}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm text-gray-700">Έτος</label>
+      <div class="flex items-start gap-3">
+        {{ form.year }}
+        {% if form.year.errors %}
+          <div class="text-red-600 text-sm">{{ form.year.errors }}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm text-gray-700">Εξάμηνο</label>
+      <div class="flex items-start gap-3">
+        {{ form.semester }}
+        {% if form.semester.errors %}
+          <div class="text-red-600 text-sm">{{ form.semester.errors }}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="grid gap-1">
+      <label class="text-sm text-gray-700">Όριο εγγραφών</label>
+      <div class="flex items-start gap-3">
+        {{ form.enrollment_limit }}
+        {% if form.enrollment_limit.errors %}
+          <div class="text-red-600 text-sm">{{ form.enrollment_limit.errors }}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="pt-2">
+      <button type="submit" data-testid="submit-course-semester" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Αποθήκευση</button>
+    </div>
+  </form>
+{% endblock %}

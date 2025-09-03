@@ -50,6 +50,8 @@ class E2EBase(StaticLiveServerTestCase):
 
     def setUp(self):
         super().setUp()
+        # Ensure catalog course exists for the form select
+        Course.objects.get_or_create(code="CS401", defaults={"title": "Programming I"})
 
     # ---- tiny utilities ---------------------------------------------------
     def go(self, path: str):

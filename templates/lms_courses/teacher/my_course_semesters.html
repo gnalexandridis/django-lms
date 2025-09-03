@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="text-2xl font-semibold mb-4">Τα Μαθήματα μου</h1>
+  <a data-testid="create-course-semester" href="{% url 'lms_courses_teacher:course_semester_teacher_create' %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+    Δημιουργία
+  </a>
+
+  <div class="mt-4 bg-white border rounded">
+    <table class="min-w-full text-sm" data-testid="course-semesters-table">
+      <thead class="bg-gray-50 text-left">
+        <tr>
+          <th class="px-4 py-2">Κωδικός</th>
+          <th class="px-4 py-2">Τίτλος</th>
+          <th class="px-4 py-2">Έτος</th>
+          <th class="px-4 py-2">Εξάμηνο</th>
+          <th class="px-4 py-2">Συνεδρίες</th>
+          <th class="px-4 py-2">Φοιτητές</th>
+        </tr>
+      </thead>
+      <tbody>
+    {% for cy in course_semesters %}
+          <tr class="border-t" data-code="{{ cy.course.code }}" data-year="{{ cy.year }}" data-semester="{{ cy.semester }}">
+            <td class="px-4 py-2" data-testid="col-code">{{ cy.course.code }}</td>
+            <td class="px-4 py-2">
+      <a class="text-indigo-700 hover:underline" href="{% url 'lms_courses_teacher:course_semester_teacher_detail' pk=cy.pk %}" data-testid="col-title">{{ cy.course.title }} @ {{ cy.year }}</a>
+            </td>
+            <td class="px-4 py-2" data-testid="col-year">{{ cy.year }}</td>
+            <td class="px-4 py-2" data-testid="col-semester">{{ cy.get_semester_display }}</td>
+            <td class="px-4 py-2" data-testid="col-sessions">{{ cy.sessions.count }}</td>
+            <td class="px-4 py-2" data-testid="col-students">{{ cy.students.count }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="px-4 py-6 text-center text-gray-500" colspan="6">Δεν υπάρχουν εξάμηνα μαθημάτων ακόμα.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

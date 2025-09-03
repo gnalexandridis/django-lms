@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">
+  {{ course_semester.course.code }} — {{ course_semester.course.title }} @ {{ course_semester.year }}
+</h1>
+
+<div class="bg-white border rounded shadow-sm p-4 mb-4">
+  <div>Μάθημα: {{ course_semester.course.title }}</div>
+  <div>Έτος: {{ course_semester.year }}</div>
+  <div>Εξάμηνο: {{ course_semester.get_semester_display }}</div>
+  <div class="mt-2 flex gap-2">
+   <a href="{% url 'lms_courses_teacher:course_semester_export' pk=course_semester.pk %}?format=csv"
+     class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded border"
+     data-testid="export-course-semester-csv">Εξαγωγή CSV</a>
+   <a href="{% url 'lms_courses_teacher:course_semester_export' pk=course_semester.pk %}?format=xlsx"
+     class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded border"
+     data-testid="export-course-semester-xlsx">Εξαγωγή XLSX</a>
+   <form method="post" action="{% url 'lms_courses_teacher:course_semester_delete' pk=course_semester.pk %}" onsubmit="return confirm('Διαγραφή μαθήματος/εξαμήνου;');">
+     {% csrf_token %}
+     <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700" data-testid="delete-course-semester">Διαγραφή</button>
+   </form>
+  </div>
+</div>
+
+{% endblock %}
