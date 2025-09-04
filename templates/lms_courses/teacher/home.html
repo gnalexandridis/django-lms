@@ -1,4 +1,116 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="text-2xl font-semibold mb-4">Καλώς ήρθες στο LMS</h1>
+
+{% if is_teacher %}
+	<form method="get" class="bg-white border rounded p-4 shadow mb-6 flex flex-wrap gap-4 items-end">
+		<div>
+			<label class="block text-sm text-gray-600">Χρονικός ορίζοντας (ημέρες)</label>
+			<select name="days" class="border rounded px-2 py-1">
+				{% for d in filter_days_options %}
+					<option value="{{ d }}" {% if d == filter_days %}selected{% endif %}>{{ d }}</option>
+				{% endfor %}
+			</select>
+		</div>
+		<div>
+			<label class="block text-sm text-gray-600">Μάθημα/Εξάμηνο</label>
+			<select name="course" class="border rounded px-2 py-1">
+				<option value="0" {% if not filter_course_id %}selected{% endif %}>Όλα</option>
+				{% for cs in filter_courses %}
+					<option value="{{ cs.id }}" {% if cs.id == filter_course_id %}selected{% endif %}>
+						{{ cs.course.code }} — {{ cs.course.title }} @ {{ cs.year }}
+					</option>
+				{% endfor %}
+			</select>
+		</div>
+		<button class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded" data-testid="apply-dashboard-filters">Εφαρμογή φίλτρων</button>
+	</form>
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+		<div class="bg-white border rounded p-4 shadow" data-testid="stat-active-courses">
+			<div class="text-sm text-gray-500">Ενεργά εξάμηνα (δικά μου)</div>
+			<div class="text-2xl font-semibold">{{ active_courses }}</div>
+		</div>
+		<div class="bg-white border rounded p-4 shadow" data-testid="stat-unique-students">
+			<div class="text-sm text-gray-500">Μοναδικοί εγγεγραμμένοι φοιτητές</div>
+			<div class="text-2xl font-semibold">{{ unique_students }}</div>
+		</div>
+		<div class="bg-white border rounded p-4 shadow" data-testid="stat-upcoming-labs">
+			<div class="text-sm text-gray-500">Επερχόμενες συνεδρίες εργαστηρίου (σε {{ filter_days }} ημ.)</div>
+			<div class="text-2xl font-semibold">{{ upcoming_labs }}</div>
+		</div>
+	</div>
+
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+		<div class="bg-white border rounded p-4 shadow" data-testid="stat-lab-grades">
+			<div class="text-sm text-gray-500">Βαθμολογήσεις εργαστηρίων</div>
+			<div class="text-sm">Ολοκληρωμένες: <span class="font-medium">{{ lab_grades_done }}</span></div>
+			<div class="text-sm">Εκκρεμείς: <span class="font-medium">{{ lab_grades_null }}</span></div>
+		</div>
+		<div class="bg-white border rounded p-4 shadow" data-testid="stat-fa">
+			<div class="text-sm text-gray-500">Τελική εργασία</div>
+			<div class="text-sm">Υποβολές: <span class="font-medium">{{ fa_submitted }}</span></div>
+			<div class="text-sm">Βαθμολογημένες: <span class="font-medium">{{ fa_graded }}</span></div>
+			<div class="text-sm">Μέσος βαθμός: <span class="font-medium">{{ fa_avg|default:"-" }}</span></div>
+		</div>
+		<div class="bg-white border rounded p-4 shadow" data-testid="stat-alerts">
+			<div class="text-sm text-gray-500">Ειδοποιήσεις</div>
+			<div class="text-sm">Καθυστερημένες συνεδρίες (χωρίς βαθμολογία): <span class="font-medium">{{ overdue_ungraded }}</span></div>
+			<div class="text-sm">Συνεδρίες χωρίς καταχωρημένες παρουσίες: <span class="font-medium">{{ no_attendance_sessions }}</span></div>
+		</div>
+	</div>
+
+	<div class="bg-white border rounded shadow p-4 mb-6" data-testid="trend-attendance">
+		<div class="text-sm text-gray-600 mb-2">Τάση βαθμολογήσεων εργαστηρίων (τελευταίες 4 εβδομάδες)</div>
+		<div class="flex items-end gap-2 h-16">
+			{% for v in attendance_trend %}
+				<div class="bg-indigo-500 w-6" style="height: {{ v|default:0|add:2 }}px" title="{{ v }}"></div>
+			{% endfor %}
+		</div>
+	</div>
+
+	<div class="bg-white border rounded shadow mb-6">
+		<div class="px-4 py-3 border-b flex items-center justify-between">
+			<h2 class="text-lg font-medium">Τα μαθήματά μου</h2>
+			<div class="flex items-center gap-4">
+				<a href="{% url 'lms_courses_teacher:course_semester_list_teacher' %}" class="text-sm text-indigo-600 hover:underline">Προβολή όλων</a>
+				<div class="flex items-center gap-2">
+					<a class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 rounded border hover:bg-gray-200" href="{% url 'teacher_export_dashboard' %}?days={{ filter_days }}{% if filter_course_id %}&course={{ filter_course_id }}{% endif %}&format=csv" data-testid="export-dashboard-csv">Εξαγωγή CSV</a>
+					<a class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 rounded border hover:bg-gray-200" href="{% url 'teacher_export_dashboard' %}?days={{ filter_days }}{% if filter_course_id %}&course={{ filter_course_id }}{% endif %}&format=xlsx" data-testid="export-dashboard-xlsx">Εξαγωγή XLSX</a>
+				</div>
+			</div>
+		</div>
+		<div class="overflow-x-auto">
+			<table class="min-w-full text-sm">
+				<thead class="bg-gray-50 text-left">
+					<tr>
+						<th class="px-4 py-2">Κωδικός</th>
+						<th class="px-4 py-2">Τίτλος</th>
+						<th class="px-4 py-2">Εγγεγραμμένοι φοιτητές</th>
+						<th class="px-4 py-2">Επερχόμενες συνεδρίες ({{ filter_days }} ημ.)</th>
+						<th class="px-4 py-2">Βαθμολογήσεις εργαστηρίων (✓/εκκρ.)</th>
+						<th class="px-4 py-2">Τελική εργασία (Υποβολές/Βαθμολογήσεις)</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for cs in per_course %}
+						<tr class="border-t">
+							<td class="px-4 py-2">{{ cs.course.code }}</td>
+							<td class="px-4 py-2">{{ cs.course.title }}</td>
+							<td class="px-4 py-2">{{ cs.students_count }}</td>
+							<td class="px-4 py-2">{{ cs.upcoming_sessions }}</td>
+							<td class="px-4 py-2">{{ cs.lab_done }} / {{ cs.lab_null }}</td>
+							<td class="px-4 py-2">{{ cs.fa_sub }} / {{ cs.fa_grd }}</td>
+						</tr>
+					{% empty %}
+						<tr>
+							<td class="px-4 py-6 text-center text-gray-500" colspan="6">Δεν βρέθηκαν μαθήματα.</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+{% else %}
+	<p class="text-gray-600">Συνδεθείτε ως διδάσκων για να δείτε στατιστικά.</p>
+{% endif %}
 {% endblock %}

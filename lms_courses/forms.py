@@ -4,6 +4,7 @@ from django import forms
 from django.conf import settings
 
 from lms_users.models import Roles, User
+from lms_users.services.keycloak import provision_local_student_from_kc
 
 from .models import (
     Course,
@@ -173,7 +174,10 @@ class EnrollmentForm(forms.Form):
                 user.save()
             else:
                 # OIDC enabled: try Keycloak lookup and local provision
-                pass
+                kc_user = provision_local_student_from_kc(username)
+                if not kc_user:
+                    raise forms.ValidationError("User not found")
+                user = kc_user
         return user
 
     def save(self):

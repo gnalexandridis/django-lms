@@ -4,7 +4,7 @@ from django.urls import include, path
 
 from lms_courses import urls as course_urls
 
-from .views import home, student_home, teacher_home
+from .views import home, student_home, teacher_export_dashboard, teacher_home
 
 urlpatterns = [
     path("oidc/", include("mozilla_django_oidc.urls")),
@@ -24,6 +24,7 @@ urlpatterns = [
     ),
     path("teacher/", teacher_home, name="teacher_home"),
     path("student/", student_home, name="student_home"),
+    path("export", teacher_export_dashboard, name="teacher_export_dashboard"),
     path("", home, name="home"),
 ]
 

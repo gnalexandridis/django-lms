@@ -1,5 +1,9 @@
+import csv
+import io
+
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
@@ -12,7 +16,9 @@ from django.views.generic import (
     View,
 )
 
+from lms_users.decorators import role_required
 from lms_users.permissions import OwnerRequiredMixin, RoleRequiredMixin, Roles
+from lms_users.services.keycloak import search_students
 
 from ..forms import (
     CourseSemesterForm,
@@ -203,7 +209,7 @@ class EnrollmentCreateView(RoleRequiredMixin, FormView):
         results = []
         if not ctx["E2E_TEST_LOGIN"] and q:
             try:
-                results = []
+                results = search_students(q, max_results=10)
             except Exception:
                 results = []
         ctx["query"] = q
@@ -445,3 +451,113 @@ class EnrollmentDeleteView(RoleRequiredMixin, View):
         return redirect(
             reverse("lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk})
         )
+
+
+@role_required(Roles.TEACHER)
+def export_course_semester(request, pk: int):
+    cs = get_object_or_404(
+        CourseSemester.objects.select_related("course"), pk=pk, owner=request.user
+    )
+    fmt = (request.GET.get("format") or "csv").lower()
+
+    # Collect sessions, participations, grades, final assignment results
+    sessions = list(cs.sessions.select_related("course_semester").all())  # type: ignore
+    parts = list(
+        LabParticipation.objects.filter(session__course_semester=cs)
+        .select_related("student", "session")
+        .order_by("session__week", "student__username")
+    )
+    grades = list(
+        LabReportGrade.objects.filter(lab_report__session__course_semester=cs)
+        .select_related("student", "lab_report__session")
+        .order_by("lab_report__session__week", "student__username")
+    )
+    fa = getattr(cs, "final_assignment", None)
+    fa_results = []
+    if fa:
+        fa_results = list(
+            FinalAssignmentResult.objects.filter(final_assignment=fa)
+            .select_related("student")
+            .order_by("student__username")
+        )
+
+    if fmt == "xlsx":
+        try:
+            from openpyxl import Workbook
+        except Exception:
+            fmt = "csv"
+        else:
+            wb = Workbook()
+            ws1 = wb.active
+            ws1.title = "Στοιχεία"  # type: ignore
+            ws1.append(["Πεδίο", "Τιμή"])  # type: ignore
+            ws1.append(["Μάθημα", f"{cs.course.code} — {cs.course.title}"])  # type: ignore
+            ws1.append(["Έτος", cs.year])  # type: ignore
+            ws1.append(["Εξάμηνο", cs.get_semester_display()])  # type: ignore
+
+            ws2 = wb.create_sheet("Συνεδρίες")
+            ws2.append(["Εβδομάδα", "Όνομα", "Ημερομηνία", "Παρόντες", "Βαθμολογημένα"])
+            for s in sessions:
+                ws2.append(
+                    [
+                        s.week,
+                        s.name,
+                        getattr(s, "date", ""),
+                        s.present_count,
+                        s.graded_count,
+                    ]
+                )
+
+            ws3 = wb.create_sheet("Παρουσίες")
+            ws3.append(["Εβδομάδα", "Φοιτητής", "Παρουσία"])
+            for p in parts:
+                ws3.append([p.session.week, p.student.username, "Ναι" if p.present else "Όχι"])
+
+            ws4 = wb.create_sheet("Βαθμοί εργαστηρίων")
+            ws4.append(["Εβδομάδα", "Φοιτητής", "Βαθμός"])
+            for g in grades:
+                ws4.append([g.lab_report.session.week, g.student.username, g.grade or ""])
+
+            ws5 = wb.create_sheet("Τελική εργασία")
+            ws5.append(["Φοιτητής", "Υποβλήθηκε", "Βαθμός"])
+            for r in fa_results:
+                ws5.append([r.student.username, "Ναι" if r.submitted else "Όχι", r.grade or ""])
+
+            out = io.BytesIO()
+            wb.save(out)
+            out.seek(0)
+            resp = HttpResponse(
+                out.read(),
+                content_type=(
+                    "application/" "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ),
+            )
+            resp["Content-Disposition"] = f"attachment; filename=course_semester_{cs.pk}.xlsx"
+            return resp
+
+    # CSV
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["course_code", "course_title", "year", "semester"])
+    writer.writerow([cs.course.code, cs.course.title, cs.year, cs.get_semester_display()])
+    writer.writerow([])
+    writer.writerow(["sessions: week", "name", "date", "present_count", "graded_count"])
+    for s in sessions:
+        writer.writerow([s.week, s.name, getattr(s, "date", ""), s.present_count, s.graded_count])
+    writer.writerow([])
+    writer.writerow(["participations: week", "student", "present"])
+    for p in parts:
+        writer.writerow([p.session.week, p.student.username, int(bool(p.present))])
+    writer.writerow([])
+    writer.writerow(["lab_grades: week", "student", "grade"])
+    for g in grades:
+        writer.writerow([g.lab_report.session.week, g.student.username, g.grade or ""])
+    writer.writerow([])
+    writer.writerow(["final_assignment: student", "submitted", "grade"])
+    for r in fa_results:
+        writer.writerow([r.student.username, int(bool(r.submitted)), r.grade or ""])
+
+    csv_bytes = out.getvalue().encode("utf-8-sig")
+    resp = HttpResponse(csv_bytes, content_type="text/csv; charset=utf-8")
+    resp["Content-Disposition"] = f"attachment; filename=course_semester_{cs.pk}.csv"
+    return resp

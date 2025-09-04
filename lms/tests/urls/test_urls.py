@@ -1,7 +1,13 @@
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
 
 class TestUrlsExtras(TestCase):
+    def test_export_url_exists(self):
+        resp = self.client.get(reverse("teacher_export_dashboard"))
+        # Not authenticated -> should redirect to login
+        self.assertIn(resp.status_code, (302, 403))
+
     @override_settings(DEBUG=False)
     def test_handler403_function_exists(self):
         # Ensure handler callable returns 403

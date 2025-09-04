@@ -15,6 +15,7 @@ from .views.teacher import (
     LabSessionDeleteView,
     LabSessionManageView,
     MyCourseSemestersList,
+    export_course_semester,
 )
 
 app_name = "lms_courses"
@@ -62,6 +63,7 @@ teacher_patterns = [
         FinalAssignmentManageView.as_view(),
         name="final_assignment_manage",
     ),
+    path("<int:pk>/export/", export_course_semester, name="course_semester_export"),
 ]
 
 # Student-facing patterns (to be mounted at /student/courses/)
