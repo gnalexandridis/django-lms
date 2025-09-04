@@ -47,7 +47,7 @@ jobs:
 
       - name: Run unit/integration tests with coverage
         run: |
-          coverage run --source=lms,lms_courses,lms_users manage.py test lms_courses/tests
+          coverage run --source=lms,lms_courses,lms_users manage.py test lms_courses/tests lms/tests lms_users/tests
           coverage report --fail-under=85
           coverage html
 

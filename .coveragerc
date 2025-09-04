@@ -6,6 +6,10 @@ omit =
     *test_*.py
     */migrations/*
     */migrations/*.py
+    */asgi.py
+    */wsgi.py
+    */settings.py
+    */seed_helpers.py
 
 [report]
 omit =
@@ -15,3 +19,7 @@ omit =
     *test_*.py
     */migrations/*
     */migrations/*.py
+    */asgi.py
+    */wsgi.py
+    */settings.py
+    */seed_helpers.py
