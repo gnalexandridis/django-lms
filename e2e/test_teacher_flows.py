@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
 from .base import E2EBase
 
 
@@ -109,6 +112,48 @@ class TestLabParticipationAndGrades(E2EBase):
             present=True,
             grade=8,
         )
+
+
+class TestDashboardFiltersAndExports(E2EBase):
+    def test_teacher_dashboard_filters_and_exports(self):
+        self.login_as("t1", "TEACHER")
+        self.teacher_creates_course_semester_from_list(
+            course_title="Programming I", course_year=2025, course_semester="Χειμερινό"
+        )
+
+        self.go("/")
+        self.select_by_visible_text("days", "7")
+        self.click_testid("apply-dashboard-filters")
+        self.should_see("σε 7 ημ.")
+
+        self.select_by_visible_text("course", "CS401 — Programming I @ 2025")
+        self.click_testid("apply-dashboard-filters")
+        self.should_see("Programming I")
+
+        for testid, fmt in (("export-dashboard-csv", "csv"), ("export-dashboard-xlsx", "xlsx")):
+            link = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, f"[data-testid='{testid}']"))
+            )
+            href = link.get_attribute("href") or ""
+            assert ("format=" + fmt) in href and "days=" in href
+
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        row = table.find_element(By.CSS_SELECTOR, "tr[data-code='CS401'][data-year='2025']")
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        for testid, fmt in (
+            ("export-course-semester-csv", "csv"),
+            ("export-course-semester-xlsx", "xlsx"),
+        ):
+            link = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, f"[data-testid='{testid}']"))
+            )
+            href = link.get_attribute("href") or ""
+            assert ("format=" + fmt) in href
 
 
 class TestDeleteFlows(E2EBase):
