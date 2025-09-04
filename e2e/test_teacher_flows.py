@@ -46,6 +46,44 @@ class TestEnrollStudent(E2EBase):
         )
 
 
+class TestFinalAssignmentCreate(E2EBase):
+    def test_teacher_creates_final_assignment(self):
+        self.login_as("t1", "TEACHER")
+        self.teacher_creates_course_semester_from_list(
+            course_title="Programming I", course_year=2025, course_semester="Χειμερινό"
+        )
+        self.teacher_creates_final_assignment(
+            course_title="Programming I",
+            course_year=2025,
+            course_semester="Χειμερινό",
+            title="Final Assignment",
+            max_grade=100,
+            due_date_iso="2025-02-20",
+        )
+
+
+class TestFinalAssignmentManage(E2EBase):
+    def test_teacher_manages_final_assignment(self):
+        self.login_as("t1", "TEACHER")
+        self.teacher_creates_course_semester_from_list(
+            course_title="Programming I", course_year=2025, course_semester="Χειμερινό"
+        )
+        self.teacher_enroll_student(
+            course_title="Programming I", course_year=2025, student_username="s1"
+        )
+        self.teacher_creates_final_assignment(
+            course_title="Programming I",
+            course_year=2025,
+            course_semester="Χειμερινό",
+            title="Final Assignment",
+            max_grade=100,
+            due_date_iso="2025-02-20",
+        )
+        self.teacher_manages_final_assignment_results(
+            course_title="Programming I", course_year=2025, submitted=True, grade=85
+        )
+
+
 class TestLabParticipationAndGrades(E2EBase):
     def test_teacher_marks_participation_and_grades(self):
         self.login_as("t1", "TEACHER")

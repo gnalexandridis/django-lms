@@ -253,3 +253,69 @@ class E2EBase(StaticLiveServerTestCase):
         self.click_testid("submit-enrollment")
         self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         self.should_see(f"{student_username}")
+
+    def teacher_creates_final_assignment(
+        self,
+        course_title: str,
+        course_year: int,
+        course_semester: str,
+        title: str,
+        max_grade: int,
+        due_date_iso: str,
+    ):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        self.click_testid("create-final-assignment")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "form")))
+        self.fill_by_name("title", title)
+        self.fill_by_name("max_grade", str(max_grade))
+        self.fill_by_name("due_date", due_date_iso)
+        self.click_testid("submit-final-assignment")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self.should_see(title)
+        self.should_see(str(max_grade))
+
+    def teacher_manages_final_assignment_results(
+        self,
+        course_title: str,
+        course_year: int,
+        submitted: bool,
+        grade: int,
+    ):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        self.click_testid("manage-final-assignment")
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="fa-manage-form"]'))
+        )
+        cb = self.browser.find_elements(
+            By.CSS_SELECTOR, 'input[type="checkbox"][name^="submitted_"]'
+        )[0]
+        if cb.is_selected() != submitted:
+            cb.click()
+        grade_input = self.browser.find_elements(
+            By.CSS_SELECTOR, 'input[type="number"][name^="fa_grade_"]'
+        )[0]
+        grade_input.clear()
+        grade_input.send_keys(str(grade))
+        self.click_testid("submit-fa-manage")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self.should_see("Τελική Εργασία")
