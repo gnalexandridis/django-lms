@@ -19,7 +19,7 @@ jobs:
       KEYCLOAK_REALM: lms
       OIDC_RP_CLIENT_ID: django-lms
       OIDC_RP_CLIENT_SECRET: client-secret
-      CSRF_TRUSTED_ORIGINS: ["http://localhost:8000"]
+      CSRF_TRUSTED_ORIGINS: "http://localhost:8000"
       OIDC_RP_SIGN_ALGO: RS256
     steps:
       - name: Checkout code
