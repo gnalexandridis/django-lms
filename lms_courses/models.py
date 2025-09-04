@@ -133,3 +133,43 @@ class LabReport(models.Model):
             raise TypeError("Missing required fields: title, max_grade, due_date")
         self.clean()
         return super().save(*args, **kwargs)
+
+
+class LabParticipation(models.Model):
+    session = models.ForeignKey(LabSession, on_delete=models.CASCADE, related_name="participations")
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lab_participations"
+    )
+    present = models.BooleanField(default=False)
+    notes = models.TextField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "student"], name="uniq_participation_per_session_student"
+            )
+        ]
+        ordering = ["student__username"]
+
+    def __str__(self) -> str:
+        state = "present" if self.present else "absent"
+        return f"Participation({self.student} @ {self.session} = {state})"
+
+
+class LabReportGrade(models.Model):
+    lab_report = models.ForeignKey(LabReport, on_delete=models.CASCADE, related_name="grades")
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lab_report_grades"
+    )
+    grade = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["lab_report", "student"], name="uniq_grade_per_report_student"
+            )
+        ]
+        ordering = ["student__username"]
+
+    def __str__(self) -> str:
+        return f"Grade({self.student} @ {self.lab_report} = {self.grade})"

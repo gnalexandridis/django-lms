@@ -3,6 +3,7 @@ from django.urls import path
 from .views.teacher import (
     CourseSemesterCreate,
     CourseSemesterDetailView,
+    EnrollmentCreateView,
     LabSessionCreateView,
     LabSessionManageView,
     MyCourseSemestersList,
@@ -21,4 +22,5 @@ teacher_patterns = [
         LabSessionManageView.as_view(),
         name="lab_session_manage",
     ),
+    path("<int:pk>/enroll/", EnrollmentCreateView.as_view(), name="enroll_student"),
 ]

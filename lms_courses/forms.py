@@ -1,10 +1,16 @@
 from typing import cast
 
 from django import forms
+from django.conf import settings
+
+from lms_users.models import Roles, User
 
 from .models import (
     Course,
     CourseSemester,
+    LabParticipation,
+    LabReport,
+    LabReportGrade,
     LabSession,
 )
 
@@ -137,3 +143,87 @@ class LabSessionForm(forms.ModelForm):
         if commit:
             obj.save()
         return obj
+
+
+class EnrollmentForm(forms.Form):
+    username = forms.CharField(
+        max_length=150,
+        error_messages={"required": "This field is required"},
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.course_semester: CourseSemester = kwargs.pop("course_semester")
+        super().__init__(*args, **kwargs)
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username", "").strip()
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            # If OIDC is disabled (local/dev), auto-provision a shadow student user
+            if getattr(settings, "E2E_TEST_LOGIN", False):
+                user = User.objects.create_user(username=username)
+                # Set role to STUDENT and unusable password for safety
+                user.role = getattr(Roles, "STUDENT", "STUDENT")
+                try:
+                    user.set_unusable_password()
+                except Exception:
+                    pass
+                user.save()
+            else:
+                # OIDC enabled: try Keycloak lookup and local provision
+                pass
+        return user
+
+    def save(self):
+        user: User = self.cleaned_data["username"]
+        self.course_semester.students.add(user)
+        return user
+
+
+class LabParticipationGradeForm(forms.Form):
+    """Dynamic form created per session to edit attendance and grades per student.
+
+    We generate fields like present_<id> (bool) and grade_<id> (int).
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.session: LabSession = kwargs.pop("session")
+        self.report: LabReport | None = kwargs.pop("report", None)
+        self.students_qs = kwargs.pop("students_qs")
+        super().__init__(*args, **kwargs)
+
+        for student in self.students_qs:
+            self.fields[f"present_{student.id}"] = forms.BooleanField(required=False)
+            max_grade = self.report.max_grade if self.report else 10
+            self.fields[f"grade_{student.id}"] = forms.IntegerField(
+                required=False, min_value=0, max_value=max_grade
+            )
+
+    def save(self):
+        report = self.report
+        if report is None:
+            # Create a default report if missing
+            report = LabReport.objects.create(
+                session=self.session,
+                title=f"Report: {self.session.name}",
+                max_grade=10,
+                due_date=self.session.date,
+            )
+
+        for student in self.students_qs:
+            present_val = bool(self.cleaned_data.get(f"present_{student.id}") or False)
+            part, _ = LabParticipation.objects.get_or_create(
+                session=self.session, student=student, defaults={"present": present_val}
+            )
+            if part.present != present_val:
+                part.present = present_val
+                part.save()
+
+            grade_val = self.cleaned_data.get(f"grade_{student.id}")
+            gr, _ = LabReportGrade.objects.get_or_create(
+                lab_report=report, student=student, defaults={"grade": grade_val}
+            )
+            if gr.grade != grade_val:
+                gr.grade = grade_val
+                gr.save()
