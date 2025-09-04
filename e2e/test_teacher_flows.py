@@ -109,3 +109,35 @@ class TestLabParticipationAndGrades(E2EBase):
             present=True,
             grade=8,
         )
+
+
+class TestDeleteFlows(E2EBase):
+    def test_teacher_can_delete_entities(self):
+        self.login_as("t1", "TEACHER")
+        self.teacher_creates_course_semester_from_list(
+            course_title="Programming I", course_year=2025, course_semester="Χειμερινό"
+        )
+        self.teacher_enroll_student(
+            course_title="Programming I", course_year=2025, student_username="s1"
+        )
+        self.teacher_adds_lab_session(
+            course_title="Programming I",
+            course_year=2025,
+            course_semester="Χειμερινό",
+            lab_name="Lab A",
+            week=1,
+            date_iso="2025-01-07",
+        )
+        self.teacher_creates_final_assignment(
+            course_title="Programming I",
+            course_year=2025,
+            course_semester="Χειμερινό",
+            title="Final Assignment",
+            max_grade=100,
+            due_date_iso="2025-02-20",
+        )
+        # Delete lab session and final assignment, unenroll student, then delete course-semester
+        self.teacher_deletes_first_lab_session("Programming I", 2025)
+        self.teacher_deletes_final_assignment("Programming I", 2025)
+        self.teacher_unenroll_first_student("Programming I", 2025)
+        self.teacher_deletes_course_semester("Programming I", 2025)

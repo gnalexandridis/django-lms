@@ -319,3 +319,88 @@ class E2EBase(StaticLiveServerTestCase):
         self.click_testid("submit-fa-manage")
         self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         self.should_see("Τελική Εργασία")
+
+    # ---- delete/unenroll helpers used in delete flows ---------------------
+    def teacher_unenroll_first_student(self, course_title: str, course_year: int):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        # Click first unenroll button if exists
+        btns = self.browser.find_elements(By.CSS_SELECTOR, 'button[data-testid^="unenroll-"]')
+        if btns:
+            btns[0].click()
+            # Unenroll may prompt for confirmation
+            self.accept_confirm_alert()  # accept if present, no strict text assertion
+            self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
+    def teacher_deletes_first_lab_session(self, course_title: str, course_year: int):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        btns = self.browser.find_elements(
+            By.CSS_SELECTOR, 'button[data-testid^="delete-lab-session-"]'
+        )
+        if btns:
+            btns[0].click()
+            # Expect a confirmation alert (GR: "Διαγραφή συνεδρίας")
+            self.accept_confirm_alert("Διαγραφή")
+            self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
+    def teacher_deletes_final_assignment(self, course_title: str, course_year: int):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        btns = self.browser.find_elements(
+            By.CSS_SELECTOR, 'button[data-testid="delete-final-assignment"]'
+        )
+        if btns:
+            btns[0].click()
+            # Expect a deletion confirmation
+            self.accept_confirm_alert("Διαγραφή")
+            self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
+    def teacher_deletes_course_semester(self, course_title: str, course_year: int):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        btn = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, 'button[data-testid="delete-course-semester"]')
+            )
+        )
+        btn.click()
+        # Expect a deletion confirmation
+        self.accept_confirm_alert("Διαγραφή")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
