@@ -12,6 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DJANGO_SETTINGS_MODULE: lms.settings
+      SECRET_KEY: ci-insecure
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      E2E_TEST_LOGIN: False
+      KEYCLOAK_BASE_URL: http://localhost:8080
+      KEYCLOAK_REALM: lms
+      OIDC_RP_CLIENT_ID: django-lms
+      OIDC_RP_CLIENT_SECRET: client-secret
+      CSRF_TRUSTED_ORIGINS: ["http://localhost:8000"]
+      OIDC_RP_SIGN_ALGO: RS256
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
