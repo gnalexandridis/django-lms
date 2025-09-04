@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import shutil
-import tempfile
 from typing import ClassVar
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -35,21 +33,14 @@ class E2EBase(StaticLiveServerTestCase):
     URL_TEACHER_DASH = "/teacher/"  # teacher home (optional; used in helpers)
     URL_STUDENT_DASH = "/student/"  # student home (optional; used in helpers)
 
-    _user_data_dir: ClassVar[str | None] = None
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         options = webdriver.ChromeOptions()
-        options.add_argument("--headless=new")  # headless for CI
+        # options.add_argument("--headless=new")  # enable for CI
         options.add_argument("--window-size=1280,1024")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")  # CI stability
-        options.add_argument("--remote-debugging-port=0")  # avoid 9222 conflicts
-        # Use a unique Chrome profile per class to avoid "already in use"
-        cls._user_data_dir = tempfile.mkdtemp(prefix="selenium-profile-")
-        options.add_argument(f"--user-data-dir={cls._user_data_dir}")
         cls.browser = webdriver.Chrome(options=options)
         cls.wait = WebDriverWait(cls.browser, TIMEOUT)
 
@@ -58,8 +49,6 @@ class E2EBase(StaticLiveServerTestCase):
         try:
             cls.browser.quit()
         finally:
-            if cls._user_data_dir:
-                shutil.rmtree(cls._user_data_dir, ignore_errors=True)
             super().tearDownClass()
 
     def setUp(self):
@@ -191,3 +180,65 @@ class E2EBase(StaticLiveServerTestCase):
         self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         self.should_see(lab_name)
         self.should_see(f"Εβδομάδα {week}")
+
+    def teacher_marks_participation_and_grades(
+        self,
+        course_title: str,
+        course_year: int,
+        session_week: int,
+        student_username: str,
+        present: bool,
+        grade: int,
+    ):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        manage_links = self.browser.find_elements(
+            By.CSS_SELECTOR, 'a[data-testid^="manage-lab-session-"]'
+        )
+        assert manage_links, "manage links not found"
+        manage_links[0].click()
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="lab-manage-form"]'))
+        )
+        checkbox = self.browser.find_elements(
+            By.CSS_SELECTOR, 'input[type="checkbox"][name^="present_"]'
+        )[0]
+        if checkbox.is_selected() != present:
+            checkbox.click()
+        grade_input = self.browser.find_elements(
+            By.CSS_SELECTOR, 'input[type="number"][name^="grade_"]'
+        )[0]
+        grade_input.clear()
+        grade_input.send_keys(str(grade))
+        self.click_testid("submit-lab-manage")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self.should_see("Παρόντες")
+        self.should_see("Βαθμολογημένα")
+
+    def teacher_enroll_student(self, course_title: str, course_year: int, student_username: str):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self.click_testid("enroll-student")
+        self.fill_by_name("username", student_username)
+        self.click_testid("submit-enrollment")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self.should_see(f"{student_username}")

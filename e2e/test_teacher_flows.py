@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 from .base import E2EBase
 
 
-class TestCreateCourseSemester(E2EBase):
-    def test_teacher_creates_course_semester(self):
+class TestCreateCourseYear(E2EBase):
+    def test_teacher_creates_course_year(self):
         self.login_as("t1", "TEACHER")
         self.teacher_creates_course_semester_from_list(
             course_title="Programming I", course_year=2025, course_semester="Χειμερινό"
@@ -31,4 +32,42 @@ class TestCreateLabsAndSessions(E2EBase):
             lab_name="Lab A",
             week=2,
             date_iso="2025-01-14",
+        )
+
+
+class TestEnrollStudent(E2EBase):
+    def test_teacher_enrolls_student(self):
+        self.login_as("t1", "TEACHER")
+        self.teacher_creates_course_semester_from_list(
+            course_title="Programming I", course_year=2025, course_semester="Χειμερινό"
+        )
+        self.teacher_enroll_student(
+            course_title="Programming I", course_year=2025, student_username="s1"
+        )
+
+
+class TestLabParticipationAndGrades(E2EBase):
+    def test_teacher_marks_participation_and_grades(self):
+        self.login_as("t1", "TEACHER")
+        self.teacher_creates_course_semester_from_list(
+            course_title="Programming I", course_year=2025, course_semester="Χειμερινό"
+        )
+        self.teacher_enroll_student(
+            course_title="Programming I", course_year=2025, student_username="s1"
+        )
+        self.teacher_adds_lab_session(
+            course_title="Programming I",
+            course_year=2025,
+            course_semester="Χειμερινό",
+            lab_name="Lab A",
+            week=1,
+            date_iso="2025-01-07",
+        )
+        self.teacher_marks_participation_and_grades(
+            course_title="Programming I",
+            course_year=2025,
+            session_week=1,
+            student_username="s1",
+            present=True,
+            grade=8,
         )
