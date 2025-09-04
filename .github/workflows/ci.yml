@@ -53,7 +53,7 @@ jobs:
 
       - name: Run end-to-end tests (Selenium)
         run: |
-          coverage run --append manage.py test e2e
+          coverage run --append manage.py test e2e --parallel 1
           coverage report --fail-under=85
           coverage html
 
