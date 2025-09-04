@@ -9,6 +9,7 @@ from django.views.generic import (
     ListView,
     TemplateView,
     UpdateView,
+    View,
 )
 
 from lms_users.permissions import OwnerRequiredMixin, RoleRequiredMixin, Roles
@@ -358,6 +359,89 @@ class FinalAssignmentManageView(RoleRequiredMixin, TemplateView):
             if changed:
                 obj.save()
 
+        return redirect(
+            reverse("lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk})
+        )
+
+
+class CourseSemesterDeleteView(RoleRequiredMixin, View):
+    allowed_roles = (Roles.TEACHER,)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.object = get_object_or_404(
+            CourseSemester.objects.all(), pk=self.kwargs["pk"], owner=request.user
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.object.delete()
+        return redirect(reverse("lms_courses_teacher:course_semester_list_teacher"))
+
+
+class LabSessionDeleteView(RoleRequiredMixin, View):
+    allowed_roles = (Roles.TEACHER,)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.cs = get_object_or_404(
+            CourseSemester.objects.select_related("course"),
+            pk=self.kwargs["pk"],
+            owner=request.user,
+        )
+        self.session = get_object_or_404(
+            LabSession.objects.all(), pk=self.kwargs["session_id"], course_semester=self.cs
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.session.delete()
+        return redirect(
+            reverse("lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk})
+        )
+
+
+class FinalAssignmentDeleteView(RoleRequiredMixin, View):
+    allowed_roles = (Roles.TEACHER,)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.cs = get_object_or_404(
+            CourseSemester.objects.select_related("course"),
+            pk=self.kwargs["pk"],
+            owner=request.user,
+        )
+        self.fa = getattr(self.cs, "final_assignment", None)
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if self.fa:
+            self.fa.delete()
+        return redirect(
+            reverse("lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk})
+        )
+
+
+class EnrollmentDeleteView(RoleRequiredMixin, View):
+    allowed_roles = (Roles.TEACHER,)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.cs = get_object_or_404(
+            CourseSemester.objects.select_related("course"),
+            pk=self.kwargs["pk"],
+            owner=request.user,
+        )
+        self.student_id = int(self.kwargs["student_id"])  # type: ignore[arg-type]
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        # Remove enrollment if present
+        self.cs.students.remove(self.student_id)
         return redirect(
             reverse("lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk})
         )
