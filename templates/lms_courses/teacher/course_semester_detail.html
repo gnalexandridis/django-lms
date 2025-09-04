@@ -1,6 +1,7 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block content %}
 <h1 class="text-2xl font-semibold mb-4">
-  {{ course_semester.course.code }} — {{ course_semester.course.title }} @ {{course_semester.year }}
+  {{ course_semester.course.code }} — {{ course_semester.course.title }} @ {{ course_semester.year }}
 </h1>
 
 <div class="bg-white border rounded shadow-sm p-4 mb-4">
@@ -14,13 +15,10 @@
   <div class="flex items-center justify-between px-4 py-3 border-b">
     <h3 class="text-lg font-medium">Συνεδρίες Εργαστηρίου</h3>
     <div class="flex items-center gap-2">
-      <a
-        href="{% url 'lms_courses_teacher:lab_session_create' pk=course_semester.pk %}"
-        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-        data-testid="create-lab-session"
-        >Προσθήκη Εργαστηρίου</a
-      >
-      <span data-testid="add-lab-session" style="display: none"></span>
+      <a href="{% url 'lms_courses_teacher:lab_session_create' pk=course_semester.pk %}"
+         class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+         data-testid="create-lab-session">Προσθήκη Εργαστηρίου</a>
+      <span data-testid="add-lab-session" style="display:none"></span>
     </div>
   </div>
   <div class="overflow-x-auto">
@@ -38,68 +36,92 @@
       </thead>
       <tbody>
         {% for s in sessions %}
-        <tr class="border-t">
-          <td class="px-4 py-2">{{ s.name }}</td>
-          <td class="px-4 py-2">Εβδομάδα {{ s.week }}</td>
-          <td class="px-4 py-2">Week {{ s.week }}</td>
-          <td class="px-4 py-2">{{ s.date }}</td>
-          <td class="px-4 py-2" data-testid="present-count-{{ s.id }}">
-            {{ s.present_count }}
-          </td>
-          <td class="px-4 py-2" data-testid="graded-count-{{ s.id }}">
-            {{ s.graded_count }}
-          </td>
-          <td class="px-4 py-2">
-            <a
-              href="{% url 'lms_courses_teacher:lab_session_manage' pk=course_semester.pk session_id=s.id %}"
-              class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-              data-testid="manage-lab-session-{{ s.id }}"
-              >Διαχείριση</a
-            >
-          </td>
-        </tr>
+          <tr class="border-t">
+            <td class="px-4 py-2">{{ s.name }}</td>
+            <td class="px-4 py-2">Εβδομάδα {{ s.week }}</td>
+            <td class="px-4 py-2">Week {{ s.week }}</td>
+            <td class="px-4 py-2">{{ s.date }}</td>
+            <td class="px-4 py-2" data-testid="present-count-{{ s.id }}">{{ s.present_count }}</td>
+            <td class="px-4 py-2" data-testid="graded-count-{{ s.id }}">{{ s.graded_count }}</td>
+            <td class="px-4 py-2">
+              <a href="{% url 'lms_courses_teacher:lab_session_manage' pk=course_semester.pk session_id=s.id %}"
+                 class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                 data-testid="manage-lab-session-{{ s.id }}">Διαχείριση</a>
+            </td>
+          </tr>
         {% empty %}
-        <tr>
-          <td class="px-4 py-6 text-center text-gray-500" colspan="7">
-            Δεν υπάρχουν συνεδρίες ακόμη.
-          </td>
-        </tr>
+          <tr>
+            <td class="px-4 py-6 text-center text-gray-500" colspan="7">Δεν υπάρχουν συνεδρίες ακόμη.</td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+</div>
+
+{# --- Final assignment section --- #}
+<div class="bg-white border rounded shadow-sm mb-6" data-testid="final-assignment-section">
+  <div class="flex items-center justify-between px-4 py-3 border-b">
+    <h3 class="text-lg font-medium">Τελική Εργασία</h3>
+    {% if final_assignment %}
+      <a href="{% url 'lms_courses_teacher:final_assignment_edit' pk=course_semester.pk %}"
+         class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
+         data-testid="edit-final-assignment">Επεξεργασία</a>
+    {% else %}
+      <a href="{% url 'lms_courses_teacher:final_assignment_create' pk=course_semester.pk %}"
+         class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+         data-testid="create-final-assignment">Δημιουργία Τελικής Εργασίας</a>
+    {% endif %}
+  </div>
+  {% if final_assignment %}
+    <div class="px-4 py-3 space-y-1" data-testid="final-assignment-details">
+      <div><span class="font-medium">Τίτλος:</span> {{ final_assignment.title }}</div>
+      <div><span class="font-medium">Μέγιστος Βαθμός:</span> {{ final_assignment.max_grade }}</div>
+      <div><span class="font-medium">Προθεσμία:</span> {{ final_assignment.due_date }}</div>
+      <div>
+        <span class="font-medium">Υποβληθέντα:</span>
+        <span data-testid="fa-submitted-count">{{ final_assignment.submitted_count }}</span>
+      </div>
+      <div>
+        <span class="font-medium">Βαθμολογημένα:</span>
+        <span data-testid="fa-graded-count">{{ final_assignment.graded_count }}</span>
+      </div>
+      <div class="pt-2">
+        <a href="{% url 'lms_courses_teacher:final_assignment_manage' pk=course_semester.pk %}"
+           class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+           data-testid="manage-final-assignment">Διαχείριση Υποβολών</a>
+      </div>
+    </div>
+  {% else %}
+    <div class="px-4 py-6 text-gray-500">Δεν έχει οριστεί τελική εργασία ακόμη.</div>
+  {% endif %}
 </div>
 
 {# --- Enrolled students table --- #}
 <div class="bg-white border rounded shadow-sm">
   <div class="flex items-center justify-between px-4 py-3 border-b">
     <h3 class="text-lg font-medium">Εγγεγραμμένοι Φοιτητές</h3>
-    <a
-      href="{% url 'lms_courses_teacher:enroll_student' pk=course_semester.pk %}"
-      class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-      data-testid="enroll-student"
-      >Εγγραφή Φοιτητή</a
-    >
+    <a href="{% url 'lms_courses_teacher:enroll_student' pk=course_semester.pk %}"
+       class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+       data-testid="enroll-student">Εγγραφή Φοιτητή</a>
   </div>
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
       <thead class="bg-gray-50 text-left">
         <tr>
           <th class="px-4 py-2">Φοιτητής</th>
-          <th class="px-4 py-2">Ενέργειες</th>
         </tr>
       </thead>
       <tbody>
         {% for s in students %}
-        <tr class="border-t">
-          <td class="px-4 py-2">{{ s.username }}</td>
-        </tr>
+          <tr class="border-t">
+            <td class="px-4 py-2">{{ s.username }}</td>
+          </tr>
         {% empty %}
-        <tr>
-          <td class="px-4 py-6 text-center text-gray-500" colspan="2">
-            Κανένας ακόμη.
-          </td>
-        </tr>
+          <tr>
+            <td class="px-4 py-6 text-center text-gray-500" colspan="2">Κανένας ακόμη.</td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>

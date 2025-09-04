@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Διαχείριση Τελικής Εργασίας: {{ final_assignment.title }}</h1>
+
+<div class="bg-white border rounded shadow-sm p-4 mb-4">
+  <div><span class="font-medium">Μέγιστος Βαθμός:</span> {{ final_assignment.max_grade }}</div>
+  <div><span class="font-medium">Προθεσμία:</span> {{ final_assignment.due_date }}</div>
+  <div class="mt-2">
+    <a href="{% url 'lms_courses_teacher:course_semester_teacher_detail' pk=course_semester.pk %}"
+       class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded border">Πίσω</a>
+  </div>
+</div>
+
+<form method="post" class="bg-white shadow-sm border rounded p-4" data-testid="fa-manage-form">
+  {% csrf_token %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 text-left">
+        <tr>
+          <th class="px-4 py-2">Φοιτητής</th>
+          <th class="px-4 py-2">Υποβλήθηκε</th>
+          <th class="px-4 py-2">Βαθμός</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+          <tr class="border-t">
+            <td class="px-4 py-2">{{ s.username }}</td>
+            <td class="px-4 py-2">
+              <input type="checkbox" name="submitted_{{ s.id }}" {% if s.submitted_value %}checked{% endif %} />
+            </td>
+            <td class="px-4 py-2">
+              <input type="number" name="fa_grade_{{ s.id }}" value="{{ s.fa_grade_value }}" min="0" max="{{ final_assignment.max_grade }}"
+                     class="w-24 border rounded px-2 py-1" /> / {{ final_assignment.max_grade }}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="px-4 py-6 text-center text-gray-500" colspan="3">Δεν υπάρχουν εγγεγραμμένοι φοιτητές.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="pt-3">
+    <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" data-testid="submit-fa-manage">Αποθήκευση</button>
+  </div>
+</form>
+{% endblock %}

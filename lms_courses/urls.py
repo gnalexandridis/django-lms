@@ -4,6 +4,9 @@ from .views.teacher import (
     CourseSemesterCreate,
     CourseSemesterDetailView,
     EnrollmentCreateView,
+    FinalAssignmentCreateView,
+    FinalAssignmentManageView,
+    FinalAssignmentUpdateView,
     LabSessionCreateView,
     LabSessionManageView,
     MyCourseSemestersList,
@@ -23,4 +26,19 @@ teacher_patterns = [
         name="lab_session_manage",
     ),
     path("<int:pk>/enroll/", EnrollmentCreateView.as_view(), name="enroll_student"),
+    path(
+        "<int:pk>/final-assignment/new/",
+        FinalAssignmentCreateView.as_view(),
+        name="final_assignment_create",
+    ),
+    path(
+        "<int:pk>/final-assignment/edit/",
+        FinalAssignmentUpdateView.as_view(),
+        name="final_assignment_edit",
+    ),
+    path(
+        "<int:pk>/final-assignment/manage/",
+        FinalAssignmentManageView.as_view(),
+        name="final_assignment_manage",
+    ),
 ]

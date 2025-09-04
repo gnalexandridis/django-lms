@@ -8,6 +8,7 @@ from lms_users.models import Roles, User
 from .models import (
     Course,
     CourseSemester,
+    FinalAssignment,
     LabParticipation,
     LabReport,
     LabReportGrade,
@@ -179,6 +180,41 @@ class EnrollmentForm(forms.Form):
         user: User = self.cleaned_data["username"]
         self.course_semester.students.add(user)
         return user
+
+
+class FinalAssignmentForm(forms.ModelForm):
+    due_date = forms.DateField(
+        input_formats=["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"],
+        widget=forms.DateInput(attrs={"type": "text", "placeholder": "YYYY-MM-DD"}),
+        error_messages={"required": "This field is required"},
+    )
+
+    class Meta:
+        model = FinalAssignment
+        fields = ["title", "max_grade", "due_date"]
+
+    def __init__(self, *args, **kwargs):
+        self.course_semester: CourseSemester | None = kwargs.pop("course_semester", None)
+        super().__init__(*args, **kwargs)
+        css = (
+            "block w-full rounded border border-gray-300 px-3 py-2 "
+            "focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        )
+        for name in ["title", "max_grade", "due_date"]:
+            field = self.fields.get(name)
+            if field is not None:
+                try:
+                    field.widget.attrs.setdefault("class", css)
+                except Exception:
+                    pass
+
+    def save(self, commit=True):
+        obj: FinalAssignment = super().save(commit=False)
+        if getattr(obj, "course_semester_id", None) is None and self.course_semester:
+            obj.course_semester = self.course_semester
+        if commit:
+            obj.save()
+        return obj
 
 
 class LabParticipationGradeForm(forms.Form):

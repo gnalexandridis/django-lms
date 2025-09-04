@@ -112,6 +112,45 @@ class LabSession(models.Model):
             return 0
 
 
+class FinalAssignment(models.Model):
+    title = models.CharField(max_length=255)
+    max_grade = models.PositiveIntegerField()
+    due_date = models.DateField()
+    course_semester = models.OneToOneField(
+        CourseSemester, on_delete=models.CASCADE, related_name="final_assignment"
+    )
+
+    class Meta:
+        ordering = ["due_date"]
+
+    def __str__(self) -> str:
+        return f"FinalAssignment({self.title}) — {self.course_semester}"
+
+    def clean(self):
+        if self.max_grade is not None and self.max_grade <= 0:
+            raise ValueError("max_grade must be positive")
+
+    def save(self, *args, **kwargs):
+        if self.title is None or self.max_grade is None or self.due_date is None:
+            raise TypeError("Missing required fields: title, max_grade, due_date")
+        self.clean()
+        return super().save(*args, **kwargs)
+
+    @property
+    def submitted_count(self) -> int:
+        try:
+            return self.results.filter(submitted=True).count()  # type: ignore[attr-defined]
+        except Exception:
+            return 0
+
+    @property
+    def graded_count(self) -> int:
+        try:
+            return self.results.exclude(grade__isnull=True).count()  # type: ignore[attr-defined]
+        except Exception:
+            return 0
+
+
 class LabReport(models.Model):
     title = models.CharField(max_length=255)
     max_grade = models.PositiveIntegerField()
@@ -173,3 +212,32 @@ class LabReportGrade(models.Model):
 
     def __str__(self) -> str:
         return f"Grade({self.student} @ {self.lab_report} = {self.grade})"
+
+
+class FinalAssignmentResult(models.Model):
+    """Per-student state for the FinalAssignment: submission and grade."""
+
+    final_assignment = models.ForeignKey(
+        FinalAssignment, on_delete=models.CASCADE, related_name="results"
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="final_assignment_results"
+    )
+    submitted = models.BooleanField(default=False)
+    grade = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["final_assignment", "student"],
+                name="uniq_final_assignment_result_per_student",
+            )
+        ]
+        ordering = ["student__username"]
+
+    def __str__(self) -> str:
+        sub = "submitted" if self.submitted else "not-submitted"
+        return (
+            f"FinalAssignmentResult({self.student} @ {self.final_assignment} = "
+            f"{sub}, {self.grade})"
+        )

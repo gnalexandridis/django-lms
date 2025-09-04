@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">{{ page_title|default:"Τελική Εργασία" }}</h1>
+<form method="post" data-testid="finalassignment-form" class="bg-white shadow-sm border rounded p-6 space-y-4">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="text-red-600 text-sm">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="grid gap-1">
+    <label class="text-sm text-gray-700">Τίτλος</label>
+    <div class="flex items-start gap-3">
+      {{ form.title }}
+      {% if form.title.errors %}
+        <div class="text-red-600 text-sm">{{ form.title.errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid gap-1">
+    <label class="text-sm text-gray-700">Μέγιστος Βαθμός</label>
+    <div class="flex items-start gap-3">
+      {{ form.max_grade }}
+      {% if form.max_grade.errors %}
+        <div class="text-red-600 text-sm">{{ form.max_grade.errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid gap-1">
+    <label class="text-sm text-gray-700">Προθεσμία</label>
+    <div class="flex items-start gap-3">
+      {{ form.due_date }}
+      {% if form.due_date.errors %}
+        <div class="text-red-600 text-sm">{{ form.due_date.errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="pt-2">
+    <button type="submit"
+            class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            data-testid="{{ submit_testid|default:"submit-final-assignment" }}">
+      {{ submit_label|default:"Αποθήκευση" }}
+    </button>
+  </div>
+</form>
+{% endblock %}

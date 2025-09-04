@@ -6,6 +6,7 @@ from django.test import TestCase
 from lms_courses.models import (
     Course,
     CourseSemester,
+    FinalAssignment,
     LabReport,
     LabReportGrade,
     LabSession,
@@ -39,3 +40,11 @@ class TestModelCountersAndStr(TestCase):
         str(self.cs)
         str(self.session)
         str(report)
+
+    def test_final_assignment_counters(self):
+        fa = FinalAssignment.objects.create(
+            title="F", max_grade=100, due_date=date(2025, 2, 1), course_semester=self.cs
+        )
+        # Initially zero
+        self.assertEqual(fa.submitted_count, 0)
+        self.assertEqual(fa.graded_count, 0)

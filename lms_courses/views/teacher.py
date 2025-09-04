@@ -3,18 +3,27 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
-from django.views.generic import CreateView, FormView, ListView, TemplateView
+from django.views.generic import (
+    CreateView,
+    FormView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 
 from lms_users.permissions import OwnerRequiredMixin, RoleRequiredMixin, Roles
 
 from ..forms import (
     CourseSemesterForm,
     EnrollmentForm,
+    FinalAssignmentForm,
     LabParticipationGradeForm,
     LabSessionForm,
 )
 from ..models import (
     CourseSemester,
+    FinalAssignment,
+    FinalAssignmentResult,
     LabParticipation,
     LabReport,
     LabReportGrade,
@@ -207,4 +216,148 @@ class EnrollmentCreateView(RoleRequiredMixin, FormView):
     def get_success_url(self):
         return reverse(
             "lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk}
+        )
+
+
+class FinalAssignmentCreateView(RoleRequiredMixin, CreateView):
+    template_name = "lms_courses/teacher/final_assignment_form.html"
+    form_class = FinalAssignmentForm
+    allowed_roles = (Roles.TEACHER,)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.cs = get_object_or_404(
+            CourseSemester.objects.select_related("course"),
+            pk=self.kwargs["pk"],
+            owner=request.user,
+        )
+        # Guard: if a final assignment already exists, redirect to edit
+        existing = getattr(self.cs, "final_assignment", None)
+        if existing is not None:
+            return redirect(
+                reverse("lms_courses_teacher:final_assignment_edit", kwargs={"pk": self.cs.pk})
+            )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["course_semester"] = self.cs
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["page_title"] = "Δημιουργία Τελικής Εργασίας"
+        ctx["submit_label"] = "Δημιουργία"
+        ctx["submit_testid"] = "submit-final-assignment"
+        return ctx
+
+    def get_success_url(self):
+        return reverse(
+            "lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk}
+        )
+
+
+class FinalAssignmentUpdateView(RoleRequiredMixin, UpdateView):
+    template_name = "lms_courses/teacher/final_assignment_form.html"
+    model = FinalAssignment
+    form_class = FinalAssignmentForm
+    allowed_roles = (Roles.TEACHER,)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.cs = get_object_or_404(
+            CourseSemester.objects.select_related("course"),
+            pk=self.kwargs["pk"],
+            owner=request.user,
+        )
+        self.object = get_object_or_404(FinalAssignment, course_semester=self.cs)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = self.object
+        kwargs["course_semester"] = self.cs
+        return kwargs
+
+    def get_object(self, queryset=None):
+        # We already fetched the object in dispatch based on course_semester ownership
+        return self.object
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["page_title"] = "Επεξεργασία Τελικής Εργασίας"
+        ctx["submit_label"] = "Ενημέρωση"
+        ctx["submit_testid"] = "submit-final-assignment"
+        return ctx
+
+    def get_success_url(self):
+        return reverse(
+            "lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk}
+        )
+
+
+class FinalAssignmentManageView(RoleRequiredMixin, TemplateView):
+    template_name = "lms_courses/teacher/final_assignment_manage.html"
+    allowed_roles = (Roles.TEACHER,)
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        self.cs = get_object_or_404(
+            CourseSemester.objects.select_related("course"),
+            pk=self.kwargs["pk"],
+            owner=request.user,
+        )
+        self.fa = get_object_or_404(FinalAssignment, course_semester=self.cs)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        students = list(self.cs.students.all().order_by("username"))
+        # Current state maps
+        res_map = {
+            r.student_id: r  # type: ignore
+            for r in FinalAssignmentResult.objects.filter(final_assignment=self.fa)
+        }
+        for s in students:
+            r = res_map.get(s.id)
+            setattr(s, "submitted_value", bool(getattr(r, "submitted", False)))
+            setattr(s, "fa_grade_value", "" if r is None or r.grade is None else r.grade)
+
+        context = {
+            "course_semester": self.cs,
+            "final_assignment": self.fa,
+            "students": students,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        # Upsert results per student
+        for student in self.cs.students.all():
+            submitted = bool(request.POST.get(f"submitted_{student.id}") == "on")
+            grade_val = request.POST.get(f"fa_grade_{student.id}")
+            grade = int(grade_val) if grade_val not in (None, "") else None
+            # Clamp grade within [0, max]
+            if grade is not None:
+                if grade < 0:
+                    grade = 0
+                if grade > self.fa.max_grade:
+                    grade = self.fa.max_grade
+
+            obj, _ = FinalAssignmentResult.objects.get_or_create(
+                final_assignment=self.fa, student=student
+            )
+            changed = False
+            if obj.submitted != submitted:
+                obj.submitted = submitted
+                changed = True
+            if obj.grade != grade:
+                obj.grade = grade
+                changed = True
+            if changed:
+                obj.save()
+
+        return redirect(
+            reverse("lms_courses_teacher:course_semester_teacher_detail", kwargs={"pk": self.cs.pk})
         )
