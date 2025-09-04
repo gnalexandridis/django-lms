@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import shutil
+import tempfile
 from typing import ClassVar
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -33,14 +35,21 @@ class E2EBase(StaticLiveServerTestCase):
     URL_TEACHER_DASH = "/teacher/"  # teacher home (optional; used in helpers)
     URL_STUDENT_DASH = "/student/"  # student home (optional; used in helpers)
 
+    _user_data_dir: ClassVar[str | None] = None
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         options = webdriver.ChromeOptions()
-        # options.add_argument("--headless=new")  # enable for CI
+        options.add_argument("--headless=new")  # enable for CI
         options.add_argument("--window-size=1280,1024")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")  # CI stability
+        options.add_argument("--remote-debugging-port=0")  # avoid 9222 conflicts
+        # Use a unique Chrome profile per class to avoid "already in use"
+        cls._user_data_dir = tempfile.mkdtemp(prefix="selenium-profile-")
+        options.add_argument(f"--user-data-dir={cls._user_data_dir}")
         cls.browser = webdriver.Chrome(options=options)
         cls.wait = WebDriverWait(cls.browser, TIMEOUT)
 
@@ -49,6 +58,8 @@ class E2EBase(StaticLiveServerTestCase):
         try:
             cls.browser.quit()
         finally:
+            if cls._user_data_dir:
+                shutil.rmtree(cls._user_data_dir, ignore_errors=True)
             super().tearDownClass()
 
     def setUp(self):
