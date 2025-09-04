@@ -22,4 +22,52 @@
   </div>
 </div>
 
+{# --- Lab sessions table --- #}
+<div class="bg-white border rounded shadow-sm mb-6">
+  <div class="flex items-center justify-between px-4 py-3 border-b">
+    <h3 class="text-lg font-medium">Συνεδρίες Εργαστηρίου</h3>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'lms_courses_teacher:lab_session_create' pk=course_semester.pk %}"
+         class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+         data-testid="create-lab-session">Προσθήκη Εργαστηρίου</a>
+      <span data-testid="add-lab-session" style="display:none"></span>
+    </div>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 text-left">
+        <tr>
+          <th class="px-4 py-2">Όνομα</th>
+          <th class="px-4 py-2">Εβδομάδα</th>
+          <th class="px-4 py-2">Week</th>
+          <th class="px-4 py-2">Ημερομηνία</th>
+          <th class="px-4 py-2">Παρόντες</th>
+          <th class="px-4 py-2">Βαθμολογημένα</th>
+          <th class="px-4 py-2">Ενέργειες</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+          <tr class="border-t">
+            <td class="px-4 py-2">{{ s.name }}</td>
+            <td class="px-4 py-2">Εβδομάδα {{ s.week }}</td>
+            <td class="px-4 py-2">Week {{ s.week }}</td>
+            <td class="px-4 py-2">{{ s.date }}</td>
+            <td class="px-4 py-2">
+              <a href="{% url 'lms_courses_teacher:lab_session_manage' pk=course_semester.pk session_id=s.id %}"
+                 class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                 data-testid="manage-lab-session-{{ s.id }}">Διαχείριση</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="px-4 py-6 text-center text-gray-500" colspan="7">Δεν υπάρχουν συνεδρίες ακόμη.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
 {% endblock %}

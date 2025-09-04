@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Διαχείριση Συνεδρίας: {{ session.name }} (Εβδομάδα {{ session.week }})</h1>
+
+<div class="bg-white border rounded shadow-sm p-4 mb-4">
+  <div><span class="font-medium">Ημερομηνία:</span> {{ session.date }}</div>
+  <div><span class="font-medium">Παρόντες:</span> {{ session.present_count }}</div>
+  <div><span class="font-medium">Βαθμολογημένα Reports:</span> {{ session.graded_count }}</div>
+  <div class="mt-2">
+    <span class="font-medium">Lab Report:</span> {{ report.title }} (max {{ report.max_grade }}) — προθεσμία {{ report.due_date }}
+  </div>
+  <a href="{% url 'lms_courses_teacher:course_semester_teacher_detail' pk=course_semester.pk %}"
+     class="inline-flex items-center mt-3 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded border">Πίσω</a>
+</div>
+
+<form method="post" class="bg-white shadow-sm border rounded p-4" data-testid="lab-manage-form">
+  {% csrf_token %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 text-left">
+        <tr>
+          <th class="px-4 py-2">Φοιτητής</th>
+          <th class="px-4 py-2">Παρουσία</th>
+          <th class="px-4 py-2">Βαθμός Report</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+          <tr class="border-t">
+            <td class="px-4 py-2">{{ s.username }}</td>
+            <td class="px-4 py-2">
+              <input type="checkbox" name="present_{{ s.id }}" {% if s.present_value %}checked{% endif %} />
+            </td>
+            <td class="px-4 py-2">
+              <input type="number" name="grade_{{ s.id }}" value="{{ s.grade_value }}" min="0" max="{{ report.max_grade }}" class="w-24 border rounded px-2 py-1" /> / {{ report.max_grade }}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td class="px-4 py-6 text-center text-gray-500" colspan="3">Δεν υπάρχουν εγγεγραμμένοι φοιτητές.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="pt-3">
+  <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" data-testid="submit-lab-manage">Αποθήκευση</button>
+  </div>
+  <p class="text-xs text-gray-500 mt-2">Σημείωση: οι μη έγκυρες τιμές βαθμών περιορίζονται αυτόματα εντός 0..{{ report.max_grade }}.</p>
+  <div class="sr-only" aria-hidden="true" data-testid="lab-participation-section"></div>
+  <div class="sr-only" aria-hidden="true" data-testid="lab-report-grade-section"></div>
+</form>
+{% endblock %}

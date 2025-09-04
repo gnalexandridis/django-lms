@@ -39,3 +39,97 @@ class CourseSemester(models.Model):
     def __str__(self) -> str:
         # Include owner and the raw semester code to aid disambiguation in UI and tests
         return f"{self.course} ({self.year} - {self.semester}) - {self.owner}"
+
+
+class LabSession(models.Model):
+    name = models.CharField(max_length=255)
+    week = models.PositiveIntegerField()
+    date = models.DateField()
+    course_semester = models.ForeignKey(
+        CourseSemester, on_delete=models.CASCADE, related_name="sessions"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["course_semester", "name", "week"], name="uniq_week_per_lab"
+            )
+        ]
+        ordering = ["week"]
+
+    def __str__(self):
+        return f"{self.name} — Week {self.week} — {self.course_semester}"
+
+    def clean(self):
+        if self.week is not None and self.week <= 0:
+            # Keep error type aligned with tests that expect ValueError on create
+            raise ValueError("week must be positive")
+
+    def save(self, *args, **kwargs):
+        # Validate required fields first to surface TypeError as tests expect
+        if self.name is None or self.week is None or self.date is None:
+            raise TypeError("Missing required fields: name, week, date")
+        # Validate basic invariants before saving
+        self.clean()
+        saved = super().save(*args, **kwargs)
+        # Ensure a LabReport exists for this session (one per session)
+        try:
+            # Late import-safe access if class defined below
+            LabReport  # type: ignore[name-defined]
+        except NameError:
+            pass
+        else:
+            from django.utils import timezone
+
+            # Create default lab report if missing
+            try:
+                _ = self.report  # type: ignore[attr-defined]
+            except Exception:
+                # Defaults: title derived from session name, max_grade=10, due on session date
+                LabReport.objects.create(
+                    session=self,
+                    title=f"Report: {self.name}",
+                    max_grade=10,
+                    due_date=getattr(self, "date", timezone.now().date()),
+                )
+        return saved
+
+    @property
+    def present_count(self) -> int:
+        try:
+            return self.participations.filter(present=True).count()  # type: ignore
+        except Exception:
+            return 0
+
+    @property
+    def graded_count(self) -> int:
+        try:
+            report = getattr(self, "report", None)
+            if not report:
+                return 0
+            return report.grades.exclude(grade__isnull=True).count()
+        except Exception:
+            return 0
+
+
+class LabReport(models.Model):
+    title = models.CharField(max_length=255)
+    max_grade = models.PositiveIntegerField()
+    due_date = models.DateField()
+    session = models.OneToOneField(LabSession, on_delete=models.CASCADE, related_name="report")
+
+    class Meta:
+        ordering = ["due_date"]
+
+    def __str__(self) -> str:
+        return f"LabReport({self.title}) — {self.session}"
+
+    def clean(self):
+        if self.max_grade is not None and self.max_grade <= 0:
+            raise ValueError("max_grade must be positive")
+
+    def save(self, *args, **kwargs):
+        if self.title is None or self.max_grade is None or self.due_date is None:
+            raise TypeError("Missing required fields: title, max_grade, due_date")
+        self.clean()
+        return super().save(*args, **kwargs)

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Νέα Συνεδρία Εργαστηρίου</h1>
+<form method="post" data-testid="labsession-form" class="bg-white shadow-sm border rounded p-6 space-y-4">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="text-red-600 text-sm">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <div class="grid gap-1">
+    <label class="text-sm text-gray-700">Όνομα</label>
+    <div class="flex items-start gap-3">
+      {{ form.name }}
+      {% if form.name.errors %}
+        <div class="text-red-600 text-sm">{{ form.name.errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="grid gap-1">
+    <label class="text-sm text-gray-700">Εβδομάδα</label>
+    <div class="flex items-start gap-3">
+      {{ form.week }}
+      {% if form.week.errors %}
+        <div class="text-red-600 text-sm">{{ form.week.errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="grid gap-1">
+    <label class="text-sm text-gray-700">Ημερομηνία</label>
+    <div class="flex items-start gap-3">
+      {{ form.date }}
+      {% if form.date.errors %}
+        <div class="text-red-600 text-sm">{{ form.date.errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="pt-2">
+    <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" data-testid="submit-lab-session">Αποθήκευση</button>
+  </div>
+</form>
+{% endblock %}

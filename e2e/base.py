@@ -28,7 +28,10 @@ class E2EBase(StaticLiveServerTestCase):
 
     # ---- URLs used across flows (adapt names if your urls.py differs) ----
     URL_LOGIN = "/users/test-login/"
+    URL_COURSES_TEACHER = "/teacher/courses/"  # my course semesters list
+    URL_COURSES_STUDENT = "/student/courses/"  # my course semesters list
     URL_TEACHER_DASH = "/teacher/"  # teacher home (optional; used in helpers)
+    URL_STUDENT_DASH = "/student/"  # student home (optional; used in helpers)
 
     @classmethod
     def setUpClass(cls):
@@ -147,3 +150,33 @@ class E2EBase(StaticLiveServerTestCase):
             By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
         )
         assert course_title in row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').text
+
+    def teacher_adds_lab_session(
+        self,
+        course_title: str,
+        course_year: int,
+        course_semester: str,
+        lab_name: str,
+        week: int,
+        date_iso: str,
+    ):
+        self.go(self.URL_COURSES_TEACHER)
+        table = self.wait.until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="course-semesters-table"]')
+            )
+        )
+        code = Course.objects.get(title=course_title).code
+        row = table.find_element(
+            By.CSS_SELECTOR, f'tr[data-code="{code}"][data-year="{course_year}"]'
+        )
+        row.find_element(By.CSS_SELECTOR, '[data-testid="col-title"]').click()
+        self.click_testid("create-lab-session")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "form")))
+        self.fill_by_name("name", lab_name)
+        self.fill_by_name("week", str(week))
+        self.fill_by_name("date", date_iso)
+        self.click_testid("submit-lab-session")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        self.should_see(lab_name)
+        self.should_see(f"Εβδομάδα {week}")
