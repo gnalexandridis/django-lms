@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="el">
+  <head>
+    <meta charset="utf-8" />
+    <title>{% block title %}LMS{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 text-gray-900">
+    <main class="max-w-5xl mx-auto px-4 py-6">
+      <section class="container mt-4">
+        <h1>403 — Δεν έχετε δικαίωμα πρόσβασης</h1>
+        <p>Αν πιστεύετε ότι πρόκειται για σφάλμα, επικοινωνήστε με τον διαχειριστή.</p>
+        <p><a href="/">Επιστροφή στην αρχική</a></p>
+        {% if request.user.is_authenticated %}
+          <p>Συνδεδεμένος ως: <strong>{{ request.user.username }}</strong> ({{ request.user.role|default:"-" }})</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

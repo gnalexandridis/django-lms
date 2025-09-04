@@ -10,7 +10,7 @@ class TestRootUrlsAndErrors(TestCase):
         # Likely 302 to login due to RoleRequired, but route resolves
         self.assertIn(resp2.status_code, (200, 302, 403))
 
-    @override_settings(DEBUG=False)
+    @override_settings(DEBUG=False, E2E_TEST_LOGIN=False)
     def test_403_handler_renders(self):
         # Force a 403 by hitting test-login without enabling it
         resp = self.client.get("/users/test-login/")

@@ -3,7 +3,7 @@ from django.urls import reverse
 
 
 class TestContextLoginLink(TestCase):
-    @override_settings(E2E_TEST_LOGIN=True)
+    @override_settings(E2E_TEST_LOGIN=True, LOGIN_URL="lms_users:test_login")
     def test_login_link_points_to_test_login(self):
         # LOGIN_URL is computed at import-time, so directly hit the login view
         resp = self.client.get(reverse("lms_users:login"))
@@ -11,7 +11,7 @@ class TestContextLoginLink(TestCase):
         self.assertIn(resp.status_code, (302, 303))
         self.assertIn(reverse("lms_users:test_login"), resp.headers.get("Location", ""))
 
-    @override_settings(E2E_TEST_LOGIN=False)
+    @override_settings(E2E_TEST_LOGIN=False, LOGIN_URL="lms_users:login")
     def test_login_link_points_to_login(self):
         resp = self.client.get("/")
         # Anonymous users are redirected to the normal login route
