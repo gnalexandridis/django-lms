@@ -16,6 +16,12 @@ urlpatterns = [
             (course_urls.teacher_patterns, "lms_courses_teacher"), namespace="lms_courses_teacher"
         ),
     ),
+    path(
+        "student/courses/",
+        include(
+            (course_urls.student_patterns, "lms_courses_student"), namespace="lms_courses_student"
+        ),
+    ),
     path("teacher/", teacher_home, name="teacher_home"),
     path("student/", student_home, name="student_home"),
     path("", home, name="home"),

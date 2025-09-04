@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .views.student import StudentCourseDetailView, StudentCourseListView
 from .views.teacher import (
     CourseSemesterCreate,
     CourseSemesterDeleteView,
@@ -61,4 +62,10 @@ teacher_patterns = [
         FinalAssignmentManageView.as_view(),
         name="final_assignment_manage",
     ),
+]
+
+# Student-facing patterns (to be mounted at /student/courses/)
+student_patterns = [
+    path("", StudentCourseListView.as_view(), name="student_course_list"),
+    path("<int:pk>/", StudentCourseDetailView.as_view(), name="student_course_detail"),
 ]

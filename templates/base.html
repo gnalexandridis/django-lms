@@ -13,6 +13,7 @@
           {% if user.is_authenticated and user.role == 'STUDENT' %}
             <a href="{% url 'student_home' %}" class="text-lg font-semibold text-indigo-600">LMS</a>
             <a href="{% url 'student_home' %}" class="text-sm hover:text-indigo-600">Αρχική</a>
+            <a href="{% url 'lms_courses_student:student_course_list' %}" class="text-sm hover:text-indigo-600">Μαθήματα</a>
           {% elif user.is_authenticated and user.role == 'TEACHER' %}
             <a href="{% url 'teacher_home' %}" class="text-lg font-semibold text-indigo-600">LMS</a>
             <a href="{% url 'teacher_home' %}" class="text-sm hover:text-indigo-600">Αρχική</a>
