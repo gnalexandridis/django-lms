@@ -15,6 +15,8 @@ env = environ.Env(
     KEYCLOAK_REALM=(str, ""),
     OIDC_RP_CLIENT_ID=(str, ""),
     OIDC_RP_CLIENT_SECRET=(str, ""),
+    KEYCLOAK_ADMIN_CLIENT_ID=(str, ""),
+    KEYCLOAK_ADMIN_CLIENT_SECRET=(str, ""),
 )
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
@@ -26,6 +28,8 @@ KEYCLOAK_BASE_URL = env("KEYCLOAK_BASE_URL")
 KEYCLOAK_REALM = env("KEYCLOAK_REALM")
 OIDC_RP_CLIENT_ID = env("OIDC_RP_CLIENT_ID")
 OIDC_RP_CLIENT_SECRET = env("OIDC_RP_CLIENT_SECRET")
+KEYCLOAK_ADMIN_CLIENT_ID = env("KEYCLOAK_ADMIN_CLIENT_ID")
+KEYCLOAK_ADMIN_CLIENT_SECRET = env("KEYCLOAK_ADMIN_CLIENT_SECRET")
 OIDC_RP_SIGN_ALGO = env("OIDC_RP_SIGN_ALGO")
 
 # Explicit endpoints for mozilla-django-oidc (Keycloak)
@@ -113,11 +117,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "el-gr"
-
 TIME_ZONE = "Europe/Athens"
-
 USE_I18N = True
-
 USE_TZ = True
 
 STATIC_URL = "static/"
