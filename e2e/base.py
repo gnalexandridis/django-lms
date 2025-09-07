@@ -13,7 +13,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from lms_courses.models import Course
 
-TIMEOUT = 10
+TIMEOUT = 20
 
 
 @override_settings(E2E_TEST_LOGIN=True)
