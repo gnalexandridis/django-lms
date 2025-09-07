@@ -14,10 +14,17 @@ def roles(request):
         if getattr(settings, "E2E_TEST_LOGIN", False)
         else reverse("lms_users:login")
     )
+    # Dynamic logout target: use in-app logout during E2E, otherwise OIDC logout
+    logout_link = (
+        reverse("lms_users:logout")
+        if getattr(settings, "E2E_TEST_LOGIN", False)
+        else reverse("oidc_logout")
+    )
     return {
         "ROLES": Roles,
         "USER_ROLE": role,
         "IS_TEACHER": role == Roles.TEACHER,
         "IS_STUDENT": role == Roles.STUDENT,
         "LOGIN_LINK": login_link,
+        "LOGOUT_LINK": logout_link,
     }
